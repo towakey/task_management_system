@@ -14,6 +14,7 @@ import sqlite3
 import header
 import footer
 import log
+from library import db
 
 cgitb.enable(display=1, logdir=None, context=5, format='html')
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -110,6 +111,9 @@ if __name__ == '__main__':
         <div class="card-body">
             <div class="card-title">ユーザー削除</div>
             <div class="card-text">
+""")
+        print(str(db.get_user_list()))
+        print(f"""
             </div>
         </div>
     </div
