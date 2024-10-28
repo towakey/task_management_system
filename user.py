@@ -111,13 +111,46 @@ if __name__ == '__main__':
         <div class="card-body">
             <div class="card-title">ユーザー削除</div>
             <div class="card-text">
+                <ul class="list-group" id="user-list">
 """)
-        print(str(db.get_user_list()))
+        for item in db.get_user_list():
+            print(f"""
+                    <li class="list-group-item d-flex justify-content-between align-items-center" data-userid="{item['id']}">
+                        {item['user_name']}
+                        <button class="btn btn-danger delete-button" data-userid="{item['id']}">削除</button>
+                    </li>
+""")
+        # print(str(db.get_user_list()))
         print(f"""
+                </ul>
             </div>
         </div>
     </div
 </div>
+<script>
+    const userList = document.getElementById('user-list');
+    userList.addEventListener('click', (event) => {{
+        if (event.target.classList.contains('delete-button')) {{
+            const userId = event.target.dataset.userid;
+            fetch(`user/delete.py?id=${{userId}}`, {{ method: 'POST' }})
+            .then(response => response.json())
+            .then(data => {{
+                if (data.status === 'success') {{
+                    // 削除成功時の処理
+                    alert('ユーザーを削除しました。');
+                    event.target.closest('li').remove(); // 削除したユーザーをリストから削除
+                   // またはページ全体をリロード: location.reload();
+                }} else {{
+                    alert(data.message);
+                }}
+            }})
+            .catch(error => {{
+                console.error('Error:', error);
+                alert('エラーが発生しました。');
+            }});
+        }}
+    }});
+</script>
 """)
 
     footer.footer()

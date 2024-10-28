@@ -20,12 +20,16 @@ config.read('config.ini', encoding=str_code)
 db_name = config['DB']['TMS']
 def get_user_list():
     try:
+        db_item = ['id', 'user_name', 'created_date']
         with sqlite3.connect(db_name) as conn:
             cursor = conn.cursor()
 
             # 既に同じuser_nameが存在するか確認
             cursor.execute(f"SELECT * FROM user")
-            result = cursor.fetchone()
+            result = []
+            result_db = cursor.fetchall()
+            for item in result_db:
+                result.append(dict(zip(db_item, item)))
     except Exception as e:
         result = {"status": "error", "message": f"データベース接続エラー: {e}"}
         log.add("db", str(result))
