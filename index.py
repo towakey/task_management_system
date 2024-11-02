@@ -11,6 +11,7 @@ import uuid
 import shutil
 import sqlite3
 import traceback
+from common import log
 
 cgitb.enable(display=1, logdir=None, context=5, format='html')
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -23,27 +24,6 @@ config = configparser.ConfigParser()
 config.read('config.ini', encoding=str_code)
 
 db_name = config['DB']['TMS']
-
-def log(filename, text):
-    str_code = "utf-8"
-    config = configparser.ConfigParser()
-    config.read('../config.ini', encoding=str_code)
-
-    url = config['LOG']['URL']
-
-    filefullname = f"{url}/{filename}.log"
-    errorfilename = f"{url}/error.log"
-    try:
-        with open(filefullname, "a", encoding="utf-8") as f:  # "a" モードで開く
-            f.write("["+datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")+"]\n")
-            f.write(str(text)+"\n")
-        # print(f"テキストを {filename} に追記しました。")
-
-    except Exception as e:
-        # print(f"エラーが発生しました: {e}")
-        with open(errorfilename, "a", encoding="utf-8") as f:  # "a" モードで開く
-            f.write("["+datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")+"]\n")
-            f.write(str(e)+"\n")
 
 def get_user_list():
     try:
@@ -59,8 +39,8 @@ def get_user_list():
                 result.append(dict(zip(db_item, item)))
     except Exception as e:
         result = {"status": "error", "message": f"データベース接続エラー: {e}"}
-        log("user", str(result))
-        log("user", f"エラー発生場所: {traceback.format_exc()}")        
+        log.log("user", f"エラー発生場所: {traceback.format_exc()}")        
+    log.log("user", str(result))
     return result
 
 def header(hierarchy):
