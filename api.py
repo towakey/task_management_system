@@ -43,48 +43,55 @@ def create_table_if_not_exists(conn):
     """)
     conn.commit()
 
+def create_db_if_not_exists():
+    """データベースファイルが存在しない場合に作成する"""
+    if not os.path.exists(db_name):
+        try:
+            conn = sqlite3.connect(db_name)
+            conn.close()
+            print(f"データベースファイル {db_name} を作成しました。", file=sys.stderr) # デバッグ用に出力 (本番環境ではコメントアウト)
+            log.add("db", f"データベースファイル {db_name} を作成しました。")
+        except Exception as e:
+            print(f"データベースの作成に失敗しました: {e}", file=sys.stderr)  # デバッグ用に出力
+            log.add("db", f"データベースの作成に失敗しました: {e}")
+
 def register_user(conn, username):
     """ユーザーを登録する。既に存在する場合はエラーを返す。"""
+    result = False
     try:
         cursor = conn.cursor()
 
-        # 既に同じuser_nameが存在するか確認
-        cursor.execute(f"SELECT * FROM user WHERE user_name = '{username}'")
-        existing_user = cursor.fetchone()
-
-        if existing_user:
-            result = {"status": "error", "message": "既に登録されているユーザー名です。"}
-            log.log("user", str(result))
-            return result
-
         user_id = str(uuid.uuid4())
         created_date = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+
         cursor.execute(f"INSERT INTO user (id, user_name, created_date) VALUES ('{user_id}', '{username}', '{created_date}')")
         conn.commit()
-        result = {"status": "success", "message": "登録成功"}
-        log.log("user", str(result))
-        return result
+        # result = {"status": "success", "message": "登録成功"}
+        result = True
 
     except sqlite3.IntegrityError:  # UNIQUE制約違反のエラーをキャッチ
-        result = {"status": "error", "message": "既に登録されているユーザー名です。"}
+        log.log("user", "USER unique error")
         log.log("user", result)
-        return result
     except Exception as e:
-        result = {"status": "error", "message": f"データベースエラー: {e}"}
-        log.log("user", str(result))
-        # print(f"エラー発生場所: {traceback.format_exc()}")        
-        log.log("user", f"エラー発生場所: {traceback.format_exc()}")        
-        return result
+        log.log("user", str(e))
+        log.log("user", traceback.format_exc())        
 
-def delete_record(table, column, value):
-    result = False
+    return result
+    
+
+def record(command, table, column, value):
+    result = "false"
     try:
         with sqlite3.connect(db_name) as conn:
             cursor = conn.cursor()
-            log.log("user", f"DELETE FROM {table} WHERE {column} = '{value}'")
-            cursor.execute(f"DELETE FROM {table} WHERE {column} = '{value}'")
+            if command == 'insert':
+                pass
+            elif command == 'delete':
+                sql = f"DELETE FROM {table} WHERE {column} = '{value}'"
+            log.log("user", sql)
+            cursor.execute(sql)
             conn.commit()
-            result = "success"
+            result = "true"
     except Exception as e:
         log.log("user", f"エラー: {traceback.format_exc()}")
     return result
@@ -92,7 +99,24 @@ def delete_record(table, column, value):
 if __name__ == '__main__':
 
     if path_info == '':
-        result = {"status": "error", "message": f"データベース接続エラー"}
+        result = {"status": "false", "message": f"command not found"}
+        print("Content-Type: application/json\n")
+        print(json.dumps(result))
+    elif path_info == '/user/list':
+        try:
+            db_item = ['id', 'user_name', 'created_date']
+            with sqlite3.connect(db_name) as conn:
+                create_table_if_not_exists(conn) # テーブルが存在しない場合は作成
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM user")
+                result_db = cursor.fetchall()
+                result_list = [dict(zip(db_item, item)) for item in result_db]
+            result = {"status": "true", "data": result_list} # 成功時はデータを返す
+        except Exception as e:
+            log.log("user", f"エラー発生場所: {traceback.format_exc()}")
+            result = {"status": "false", "message": f"データベースエラー: {e}"}        
+        log.log("user", result)
+
         print("Content-Type: application/json\n")
         print(json.dumps(result))
     elif path_info == '/user/registry':
@@ -101,30 +125,33 @@ if __name__ == '__main__':
                 create_table_if_not_exists(conn) # テーブルが存在しない場合は作成
                 if username:
                     log.log("user", form)
-                    result = register_user(conn, username)
+                    if register_user(conn, username):
+                        result = {"status": "true", "message": "Succcess"}
+                    else:
+                        result = {"status": "false", "message": "Registry fail"}
                 else:
-                    result = {"status": "error", "message": "ユーザー名が入力されていません。"}
+                    result = {"status": "false", "message": "User name not input"}
 
         except Exception as e:
-            result = {"status": "error", "message": f"データベース接続エラー: {e}"}
+            result = {"status": "false", "message": f"データベース接続エラー: {e}"}
+        log.log("user", result)
 
-        # result = {"status": "success", "message": f"user registry"}
         print("Content-Type: application/json\n")
         print(json.dumps(result))
     elif path_info == '/user/delete':
+        status = "false"
+        message = ""
         try:
-            status = "False"
             if user_id:
-                status = delete_record("user", "id", user_id)
-                message = "ユーザーが削除されました"
+                status = record("delete", "user", "id", user_id)
+                message = "ID delete complete"
             else:
-                status = "False"
-                message = "IDがありません"
+                status = "false"
+                message = "ID not found"
 
         except Exception as e:
-            status = "False"
-            message = "エラーが発生しました"
-            # log.add("user/delete", f"エラー: {traceback.format_exc()}")        
+            message = "Error"
+            log.log("user", f"エラー: {traceback.format_exc()}")        
 
 
         result = {"status": status, "message": message}

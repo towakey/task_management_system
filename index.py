@@ -25,24 +25,6 @@ config.read('config.ini', encoding=str_code)
 
 db_name = config['DB']['TMS']
 
-def get_user_list():
-    try:
-        db_item = ['id', 'user_name', 'created_date']
-        with sqlite3.connect(db_name) as conn:
-            cursor = conn.cursor()
-
-            # 既に同じuser_nameが存在するか確認
-            cursor.execute(f"SELECT * FROM user")
-            result = []
-            result_db = cursor.fetchall()
-            for item in result_db:
-                result.append(dict(zip(db_item, item)))
-    except Exception as e:
-        result = {"status": "error", "message": f"データベース接続エラー: {e}"}
-        log.log("user", f"エラー発生場所: {traceback.format_exc()}")        
-    log.log("user", str(result))
-    return result
-
 def header(hierarchy):
     place = "./"
     for i in range(hierarchy):
@@ -136,7 +118,7 @@ if __name__ == '__main__':
             })
             .then(response => response.json()) // レスポンスをJSONとしてパース
             .then(data => {
-                if (data.status === "success") {
+                if (data.status === "true") {
                     // 成功時の処理 (例: リダイレクト)
                     window.location.href = "../user"; // または他のページへ
                 } else {
@@ -164,22 +146,30 @@ if __name__ == '__main__':
             <div class="card-title">ユーザー削除</div>
             <div class="card-text">
                 <ul class="list-group" id="user-list">
-""")
-        for item in get_user_list():
-            print(f"""
-                    <li class="list-group-item d-flex justify-content-between align-items-center" data-userid="{item['id']}">
-                        {item['user_name']}
-                        <button class="btn btn-danger delete-button" data-userid="{item['id']}">削除</button>
-                    </li>
-""")
-        # print(str(db.get_user_list()))
-        print(f"""
                 </ul>
             </div>
         </div>
     </div
 </div>
 <script>
+    window.onload = function() {{
+        fetch('./../../api.py/user/list') // api.py/user/list を呼び出す
+            .then(response => response.json())
+            .then(data => {{
+                if (data.status === "true") {{
+                    const userList = document.getElementById('user-list');
+                    data.data.forEach(user => {{ // data.data にユーザー情報が入っている
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                        listItem.dataset.userid = user.id;
+                        listItem.innerHTML = `${{user.user_name}} <button class="btn btn-danger delete-button" data-userid="${{user.id}}">削除</button>`;
+                        userList.appendChild(listItem);
+                    }});
+                }} else {{
+                    alert(data.message);
+                }}
+            }});
+    }};
     const userList = document.getElementById('user-list');
     userList.addEventListener('click', (event) => {{
         if (event.target.classList.contains('delete-button')) {{
@@ -191,7 +181,7 @@ if __name__ == '__main__':
             fetch(`./../../api.py/user/delete`, {{ method: 'POST', body: formData }})
             .then(response => response.json())
             .then(data => {{
-                if (data.status === "success") {{
+                if (data.status === "true") {{
                     // 削除成功時の処理
                     //alert('ユーザーを削除しました。');
                     //event.target.closest('li').remove(); // 削除したユーザーをリストから削除
