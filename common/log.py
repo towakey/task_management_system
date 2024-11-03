@@ -20,11 +20,12 @@ str_code = "utf-8"
 config = configparser.ConfigParser()
 config.read('./config.ini', encoding=str_code)
 
-log_file_url = config['LOG']['URL']
+# log_file_url = config['LOG']['NAME']
+log_file_url = os.getcwd()
 
 def log(filename, text):
 
-    filefullname = f"{log_file_url}/{filename}.log"
+    filefullname = f"{log_file_url}/log/{filename}.log"
     # errorfilename = f"{url}/error.log"
     try:
         with open(filefullname, "a", encoding="utf-8") as f:  # "a" モードで開く

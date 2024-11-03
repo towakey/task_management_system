@@ -24,8 +24,7 @@ str_code = "utf-8"
 config = configparser.ConfigParser()
 config.read('./config.ini', encoding=str_code)
 
-db_name = config['DB']['TMS']
-log_file_url = config['LOG']['URL']
+db_name = config['DB']['NAME']
 
 # form = cgi.FieldStorage()
 username = form.getvalue("user_name", "") # user_nameパラメータを取得
@@ -45,12 +44,13 @@ def create_table_if_not_exists(conn):
 
 def create_db_if_not_exists():
     """データベースファイルが存在しない場合に作成する"""
-    if not os.path.exists(db_name):
+    db = f"{os.getcwd()}/{db_name}"
+    if not os.path.exists(db):
         try:
-            conn = sqlite3.connect(db_name)
+            conn = sqlite3.connect(db)
             conn.close()
-            print(f"データベースファイル {db_name} を作成しました。", file=sys.stderr) # デバッグ用に出力 (本番環境ではコメントアウト)
-            log.add("db", f"データベースファイル {db_name} を作成しました。")
+            print(f"データベースファイル {db} を作成しました。", file=sys.stderr) # デバッグ用に出力 (本番環境ではコメントアウト)
+            log.add("db", f"データベースファイル {db} を作成しました。")
         except Exception as e:
             print(f"データベースの作成に失敗しました: {e}", file=sys.stderr)  # デバッグ用に出力
             log.add("db", f"データベースの作成に失敗しました: {e}")
@@ -81,8 +81,9 @@ def register_user(conn, username):
 
 def record(command, table, column, value):
     result = "false"
+    db = f"{os.getcwd()}/{db_name}"
     try:
-        with sqlite3.connect(db_name) as conn:
+        with sqlite3.connect(db) as conn:
             cursor = conn.cursor()
             if command == 'insert':
                 pass
@@ -97,6 +98,7 @@ def record(command, table, column, value):
     return result
 
 if __name__ == '__main__':
+    db = f"{os.getcwd()}/{db_name}"
 
     if path_info == '':
         result = {"status": "false", "message": f"command not found"}
@@ -105,7 +107,7 @@ if __name__ == '__main__':
     elif path_info == '/user/list':
         try:
             db_item = ['id', 'user_name', 'created_date']
-            with sqlite3.connect(db_name) as conn:
+            with sqlite3.connect(db) as conn:
                 create_table_if_not_exists(conn) # テーブルが存在しない場合は作成
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM user")
@@ -121,7 +123,7 @@ if __name__ == '__main__':
         print(json.dumps(result))
     elif path_info == '/user/registry':
         try:
-            with sqlite3.connect(db_name) as conn:
+            with sqlite3.connect(db) as conn:
                 create_table_if_not_exists(conn) # テーブルが存在しない場合は作成
                 if username:
                     log.log("user", form)

@@ -11,19 +11,13 @@ import uuid
 import shutil
 import sqlite3
 import traceback
-from common import log
+# from common import log
 
 cgitb.enable(display=1, logdir=None, context=5, format='html')
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 form = cgi.FieldStorage()
 path_info = os.environ.get('PATH_INFO', '')
-
-str_code = "utf-8"
-config = configparser.ConfigParser()
-config.read('config.ini', encoding=str_code)
-
-db_name = config['DB']['TMS']
 
 def header(hierarchy):
     place = "./"
