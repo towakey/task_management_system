@@ -40,6 +40,54 @@ if __name__ == '__main__':
         result = {"status": "false", "message": f"command not found"}
         print("Content-Type: application/json\n")
         print(json.dumps(result))
+    elif path_info == '/task/list':
+        try:
+            db_item = ['id', 'title', 'contents', 'created_date' 'updated_date']
+            with sqlite3.connect(db_path) as conn:
+                
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM task")
+                result_db = cursor.fetchall()
+                result_list = [dict(zip(db_item, item)) for item in result_db]
+            result = {"status": "true", "data": result_list} # 成功時はデータを返す
+        except Exception as e:
+            log.log("user", f"エラー発生場所: {traceback.format_exc()}")
+            result = {"status": "false", "message": f"データベースエラー: {e}"}        
+        log.log("task", result)
+
+        print("Content-Type: application/json\n")
+        print(json.dumps(result))
+
+    elif path_info == '/task/registry':
+        try:
+            title = form.getvalue("title", "") # user_nameパラメータを取得
+            contents = form.getvalue("contents", "") # user_nameパラメータを取得
+            with sqlite3.connect(db_path) as conn:
+                if title:
+                    val = {}
+                    # created_date = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+                    # updated_date = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+                    val["id"] = str(uuid.uuid4())
+                    val["title"] = title
+                    val["contents"] = contents
+                    val["created_date"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+                    val["updated_date"] = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+                    log.log("task", val)
+
+                    if db.datebase.record("insert", "task", val):
+                        result = {"status": "true", "message": "Succcess"}
+                    else:
+                        result = {"status": "false", "message": "Registry fail"}
+                else:
+                    result = {"status": "false", "message": "User name not input"}
+        except Exception as e:
+            log.log("user", f"Error: {traceback.format_exc()}")
+            result = {"status": "false", "message": f"データベース接続エラー: {e}"}
+        log.log("user", result)
+
+        print("Content-Type: application/json\n")
+        print(json.dumps(result))
+
     elif path_info == '/user/list':
         try:
             db_item = ['id', 'user_name', 'created_date']

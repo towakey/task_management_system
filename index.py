@@ -56,7 +56,108 @@ if __name__ == '__main__':
     print('Content-type: text/html; charset=UTF-8\r\n')
     if path_info == '':
         header(0)
-        print(path_info)
+        # print(path_info)
+        print(f"""
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">タスク</div>
+            <div class="card-text">
+                <ul class="list-group" id="task-list">
+                </ul>
+            </div>
+        </div>
+    </div
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">タスク操作</div>
+            <div class="card-text">
+                <ul class="list-group">
+                    <a href="./index.py/task/registry"><li class="list-group-item">タスク登録</li></a>
+                    <a href="./index.py/task/delete"><li class="list-group-item">タスク削除</li></a>
+                </ul>
+            </div>
+        </div>
+    </div
+</div>
+<script>
+    window.onload = function() {{
+        fetch('./api.py/task/list') // api.py/user/list を呼び出す
+            .then(response => response.json())
+            .then(data => {{
+                if (data.status === "true") {{
+                    const taskList = document.getElementById('task-list');
+                    data.data.forEach(task => {{ // data.data にユーザー情報が入っている
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                        listItem.dataset.id = task.id;
+                        listItem.innerHTML = `${{task.title}}`;
+                        taskList.appendChild(listItem);
+                    }});
+                }} else {{
+                    alert(data.message);
+                }}
+            }});
+    }};
+</script>
+""")
+        footer()
+    elif path_info == '/task/registry':
+        header(2)
+        print("""
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">タスク登録</div>
+            <div class="card-text">
+                <div class="input-group mb-3">
+                    <input type="text" id="title" class="form-control" placeholder="タスク名を入力" aria-label="Username" aria-describedby="basic-addon1">
+                    <input type="text" id="contents" class="form-control" placeholder="タスクの内容を入力" aria-label="Username" aria-describedby="basic-addon1">
+                </div>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" type="button" onclick="submitForm()">送信</button>
+                </div>
+            </div>
+        </div>
+    </div
+</div>
+    <script>
+        function submitForm() {
+            const title = document.getElementById("title").value;
+            const contents = document.getElementById("contents").value;
+
+            // フォームデータを作成
+            const formData = new FormData();
+            formData.append("title", title);
+            formData.append("contents", contents);
+              
+            console.log(formData)
+
+
+            // AJAXリクエストを送信
+            fetch("./../../api.py/task/registry", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json()) // レスポンスをJSONとしてパース
+            .then(data => {
+                if (data.status === "true") {
+                    // 成功時の処理 (例: リダイレクト)
+                    window.location.href = "./../../index.py"; // または他のページへ
+                } else {
+                    // エラー時の処理
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                // エラー時の処理
+                alert(error);
+            });
+
+        }
+
+    </script>
+""")
         footer()
     elif path_info == '/user':
         header(1)

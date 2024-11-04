@@ -48,6 +48,18 @@ class datebase():
         """)
         conn.commit()
 
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS task (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                contents TEXT,
+                created_date TEXT,
+                updated_date TEXT
+            )
+        """)
+        conn.commit()
+
         conn.close()
 
     def record(command, table, dict):
